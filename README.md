@@ -11,4 +11,4 @@ SCoOL provides several ready-to-use runtime implementations that can be readily 
 
 The SCoOL project has been supported by [NSF](https://www.nsf.gov/) under the award [OAC-1845840](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1845840).
 
-For more details, visit: https://gitlab.com/SCoRe-Group/scool/-/tree/master
+For more details, visit: https://gitlab.com/SCoRe-Group/scool/
