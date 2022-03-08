@@ -1,0 +1,99 @@
+Bootstrap: docker
+From: debian:testing-slim
+
+%labels
+    Author Jaroslaw Zola <jaroslaw.zola@hush.com>, Zainul Sayed <zsayed@buffalo.edu>
+
+%help
+    This container encapsulates toy examples developed using the SCoOL framework.
+
+%files
+   ../../../SCoOL /SCoOL
+
+%environment
+    # Intel MPI root directory must be bound to the container's /intel-mpi
+    # environment is set accordingly
+    export I_MPI_ROOT=/intel-mpi
+    export PATH=$I_MPI_ROOT/bin:$I_MPI_ROOT/libfabric/bin:$I_MPI_ROOT/intel64/bin:$I_MPI_ROOT/intel64/libfabric/bin:$PATH
+    export CPATH=$I_MPI_ROOT/include:$I_MPI_ROOT/intel64/include:$CPATH
+    export LD_LIBRARY_PATH=$I_MPI_ROOT/lib:$I_MPI_ROOT/lib/release:$I_MPI_ROOT/libfabric/lib:$I_MPI_ROOT/intel64/lib:$I_MPI_ROOT/intel64/lib/release:$I_MPI_ROOT/intel64/libfabric/lib:$LD_LIBRARY_PATH
+    export LIBRARY_PATH=$I_MPI_ROOT/lib:$I_MPI_ROOT/lib/release:$I_MPI_ROOT/libfabric/lib:$I_MPI_ROOT/intel64/lib:$I_MPI_ROOT/intel64/lib/release:$I_MPI_ROOT/intel64/libfabric/lib:$LIBRARY_PATH
+    export FI_PROVIDER_PATH=$I_MPI_ROOT/libfabric/lib/prov:$I_MPI_ROOT/intel64/libfabric/lib/prov
+    export INTEL_COMPILER=/opt/intel/oneapi/compiler/latest/linux/
+    export PATH=$PATH:$INTEL_COMPILER/bin:$INTEL_COMPILER/bin/intel64
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INTEL_COMPILER/compiler/lib/intel64:$INTEL_COMPILER/lib
+    export LIBRARY_PATH=$LIBRARY_PATH:$INTEL_COMPILER/compiler/lib/intel64:$INTEL_COMPILER/lib
+
+%post
+    #mkdir /usr/share/man/man1/
+
+    apt update -y
+    apt upgrade -y
+
+    apt install -y wget gnupg2
+    apt install -y default-jdk default-jre
+
+    # Intel sucks, that is why we need bunch of crappy workarounds
+    # add Intel repository
+    wget -4 https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB
+    apt-key add GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB
+    rm -rf GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB
+    echo "deb  https://apt.repos.intel.com/oneapi all main" | tee /etc/apt/sources.list.d/oneAPI.list
+
+    # this is to deal with pathethic Intel servers
+    # most likely some servers will be down and install will fail anyway
+    echo 'APT::Acquire::Retries "10";' > /etc/apt/apt.conf.d/80-retries
+
+    # install tools
+    PACKAGES="make cmake g++ intel-oneapi-mpi-devel intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic"
+    IB_PACKAGES="libibverbs* librdmacm* libmlx4* libmlx5* libibumad*"
+
+    apt update -y
+    apt install -y lib32z1-dev
+    apt install -y --no-install-recommends ${PACKAGES}
+    apt install -y --no-install-recommends ${IB_PACKAGES}
+
+    wget -4  https://registrationcenter-download.intel.com/akdlm/irc_nas/17764/l_HPCKit_p_2021.2.0.2997.sh
+    bash l_HPCKit_p_2021.2.0.2997.sh
+
+    # normally we would source /opt/intel/oneapi/setvars.sh
+    # but that does not work because Intel sucks
+    # hence we set things manually
+
+    export I_MPI_ROOT=/opt/intel/oneapi/mpi/latest
+    export PATH=$I_MPI_ROOT/bin:$I_MPI_ROOT/libfabric/bin:$PATH
+    export CPATH=$I_MPI_ROOT/include:$CPATH
+    export LD_LIBRARY_PATH=$I_MPI_ROOT/lib:$I_MPI_ROOT/lib/release:$I_MPI_ROOT/libfabric/lib:$LD_LIBRARY_PATH
+    export LIBRARY_PATH=$I_MPI_ROOT/lib:$I_MPI_ROOT/lib/release:$I_MPI_ROOT/libfabric/lib:$LD_LIBRARY_PATH
+    export FI_PROVIDER_PATH=$I_MPI_ROOT/libfabric/lib/prov
+    export INTEL_COMPILER=/opt/intel/oneapi/compiler/latest/linux/
+    export PATH=$PATH:$INTEL_COMPILER/bin:$INTEL_COMPILER/bin/intel64
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INTEL_COMPILER/compiler/lib/intel64:$INTEL_COMPILER/lib
+    export LIBRARY_PATH=$LIBRARY_PATH:$INTEL_COMPILER/compiler/lib/intel64:$INTEL_COMPILER/lib
+
+    # build apps
+    cd /SCoOL/examples
+    ./build.sh
+
+    # and do cleanup (we need to keep Intel compiler)
+    apt purge -y intel-oneapi-mpi-devel
+    apt autoremove -y
+    apt clean
+
+    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/tmp/*
+
+%runscript
+    echo "SCoOL Demo Container"
+    echo "Usage:"
+    echo "  qap_shm: singularity run --app qap_shm scool-example.simg"
+    echo "  qap_mpi: singularity run --app qap_mpi scool-example.simg"
+    echo ""
+    echo "Note that Intel MPI root directory must be bound to the container's /intel-mpi"
+    echo "e.g.: singularity run -B /opt/intel/oneapi/mpi/latest:/intel-mpi"
+
+%apprun qap_shm
+    /SCoOL/examples/bin/qap_shm $@
+
+%apprun qap_mpi
+    /SCoOL/examples/bin/qap_mpi $@

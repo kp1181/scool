@@ -1,0 +1,7 @@
+/Users/krishnaprasadporandla/Downloads/scool-bnsl/examples/bnsl/CMakeFiles/bnsl_mpi.dir
+/Users/krishnaprasadporandla/Downloads/scool-bnsl/examples/bnsl/CMakeFiles/edit_cache.dir
+/Users/krishnaprasadporandla/Downloads/scool-bnsl/examples/bnsl/CMakeFiles/rebuild_cache.dir
+/Users/krishnaprasadporandla/Downloads/scool-bnsl/examples/bnsl/CMakeFiles/list_install_components.dir
+/Users/krishnaprasadporandla/Downloads/scool-bnsl/examples/bnsl/CMakeFiles/install.dir
+/Users/krishnaprasadporandla/Downloads/scool-bnsl/examples/bnsl/CMakeFiles/install/local.dir
+/Users/krishnaprasadporandla/Downloads/scool-bnsl/examples/bnsl/CMakeFiles/install/strip.dir

@@ -1,0 +1,52 @@
+#!/bin/bash
+
+if [ -z "$2" ]; then
+  echo "usage: $0 path project"
+  exit -1
+fi
+
+DIR="$1"
+NAME="$2"
+
+mkdir -p "$DIR/$NAME"
+
+if [ ! -d "$DIR/$NAME" ]; then
+  echo "[error] could not create $DIR/$NAME"
+  exit -1
+fi
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+tail -n+15 "$SCRIPT_DIR"/../template/task.hpp | sed -e "s/TaskType/XXX/g" | sed -e "s/Task/$NAME\_task/g" | sed -e "s/XXX/TaskType/g" | sed -e "s/TASK\_HPP/$NAME\_task\_hpp/g" > "$DIR/$NAME/$NAME"_task.hpp
+tail -n+15 "$SCRIPT_DIR"/../template/state.hpp | sed -e "s/StateType/XXX/g" | sed -e "s/State/$NAME\_state/g" | sed -e "s/XXX/StateType/g" | sed -e "s/STATE\_HPP/$NAME\_state\_hpp/g" > "$DIR/$NAME/$NAME"_state.hpp
+
+if [ ! -f "$DIR/$NAME/$NAME"_task.hpp ] || [ ! -f "$DIR/$NAME/$NAME"_state.hpp ]; then
+  echo "[error] could not initialize project $DIR/$NAME"
+  exit -1
+fi
+
+cp -R "$SCRIPT_DIR"/../include "$DIR/$NAME/scool"
+
+if [ ! -d "$DIR/$NAME/scool" ]; then
+  echo "[error] could not copy SCoOL to $DIR/$NAME"
+  exit -1
+fi
+
+echo "#include \"scool/omp_executor.hpp\"
+#include \"scool/mpi_executor.hpp\"
+
+#include \""$NAME"_task.hpp\"
+#include \""$NAME"_state.hpp\"
+
+int main(int argc, char* argv[]) {
+    return 0;
+} // main" > "$DIR/$NAME/$NAME"_main.cpp
+
+if [ ! -f "$DIR/$NAME/$NAME"_main.cpp ]; then
+  echo "[error] could not create main "$DIR/$NAME/$NAME"_main.cpp"
+  exit -1
+fi
+
+echo "[info] project $DIR/$NAME created..."
+
+exit 0

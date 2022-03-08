@@ -1,0 +1,129 @@
+Bootstrap: docker
+From: debian:testing-slim
+
+%labels
+    Author Jaroslaw Zola <jaroslaw.zola@hush.com>
+
+%help
+    This container encapsulates toy examples developed using the SCoOL framework.
+
+%files
+   ../../../SCoOL /SCoOL
+   /home/zain/lib/tau_latest.tar.gz /tau_latest.tar.gz
+   /home/zain/lib/pdt.tar.gz /pdt.tar.gz
+   /home/zain/lib/ext.tgz /ext.tgz
+
+
+%environment
+    # Intel MPI root directory must be bound to the container's /intel-mpi
+    # environment is set accordingly
+    export I_MPI_ROOT=/intel-mpi
+    export PATH=$I_MPI_ROOT/bin:$I_MPI_ROOT/libfabric/bin:$I_MPI_ROOT/intel64/bin:$I_MPI_ROOT/intel64/libfabric/bin:$PATH
+    export CPATH=$I_MPI_ROOT/include:$I_MPI_ROOT/intel64/include:$CPATH
+    export LD_LIBRARY_PATH=$I_MPI_ROOT/lib:$I_MPI_ROOT/lib/release:$I_MPI_ROOT/libfabric/lib:$I_MPI_ROOT/intel64/lib:$I_MPI_ROOT/intel64/lib/release:$I_MPI_ROOT/intel64/libfabric/lib:$LD_LIBRARY_PATH
+    export LIBRARY_PATH=$I_MPI_ROOT/lib:$I_MPI_ROOT/lib/release:$I_MPI_ROOT/libfabric/lib:$I_MPI_ROOT/intel64/lib:$I_MPI_ROOT/intel64/lib/release:$I_MPI_ROOT/intel64/libfabric/lib:$LIBRARY_PATH
+    export FI_PROVIDER_PATH=$I_MPI_ROOT/libfabric/lib/prov:$I_MPI_ROOT/intel64/libfabric/lib/prov
+    export PATH=$PATH:/tau/x86_64/bin/
+    export PATH=$PATH:/pdt/x86_64//bin:/opt/intel/oneapi/mpi/2021.2.0/bin/mpiifort
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/oneapi/compiler/latest/linux/compiler/lib/intel64_lin/
+
+%post
+    # Intel sucks, that is why we need bunch of crappy workarounds
+
+    # add Intel repository
+    #mkdir /usr/share/man/man1/
+    apt update -y
+    apt install -y wget gnupg2
+    apt upgrade -y
+    apt install -y default-jdk
+    apt update -y
+    apt install -y default-jre
+
+    wget -4 https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB
+    apt-key add GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB
+    rm -rf add GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB
+    echo "deb  https://apt.repos.intel.com/oneapi all main" | tee /etc/apt/sources.list.d/oneAPI.list
+
+    # this is to deal with pathethic Intel servers
+    # most likely anyway some servers will be down and install will fail
+    echo 'APT::Acquire::Retries "10";' > /etc/apt/apt.conf.d/80-retries
+
+    # install tools
+    PACKAGES="make cmake g++ intel-oneapi-mpi-devel intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic intel-oneapi-compiler-shared-runtime-2021.2.0"
+    IB_PACKAGES="libibverbs* librdmacm* libmlx4* libmlx5* libibumad*"
+
+    apt update -y
+    apt install -y lib32z1-dev
+    apt install -y --no-install-recommends ${PACKAGES}
+    apt install -y --no-install-recommends ${IB_PACKAGES}
+
+    # normally we would source /opt/intel/oneapi/setvars.sh
+    # but that does not work because Intel sucks
+    # hence we set things manually
+
+    export I_MPI_ROOT=/opt/intel/oneapi/mpi/latest
+    export PATH=$I_MPI_ROOT/bin:$I_MPI_ROOT/libfabric/bin:$PATH
+    export CPATH=$I_MPI_ROOT/include:$CPATH
+    export LD_LIBRARY_PATH=$I_MPI_ROOT/lib:$I_MPI_ROOT/lib/release:$I_MPI_ROOT/libfabric/lib:$LD_LIBRARY_PATH
+    export LIBRARY_PATH=$I_MPI_ROOT/lib:$I_MPI_ROOT/lib/release:$I_MPI_ROOT/libfabric/lib:$LD_LIBRARY_PATH
+    export FI_PROVIDER_PATH=$I_MPI_ROOT/libfabric/lib/prov
+    export PATH=$PATH:/tau/x86_64/bin/:opt/intel/oneapi/mpi/2021.2.0/bin/mpiifort
+    export PATH=$PATH:/pdt/x86_64//bin
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/oneapi/compiler/latest/linux/compiler/lib/intel64_lin/
+    export PATH=$PATH:/opt/intel/oneapi/compiler/latest/
+    export PATH=$PATH:/opt/intel/oneapi/compiler/latest/linux/bin/intel64/:/opt/intel/oneapi/compiler/latest/linux/bin/
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/oneapi/compiler/latest/linux/bin/intel64/:/opt/intel/oneapi/compiler/latest/linux/bin/
+
+    cd /
+    wget -4 http://tau.uoregon.edu/pdt.tar.gz
+    wget -4 http://www.cs.uoregon.edu/research/paracomp/tau/tauprofile/dist/tau_latest.tar.gz
+    wget -4 http://www.cs.uoregon.edu/research/paracomp/tau/tauprofile/dist/ext.tgz
+    ls -haltr
+    tar -xzf pdt.tar.gz  && mv pdto* /pdt
+    tar -xzf tau_latest.tar.gz && mv tau-* /tau
+    tar -xzf ext.tgz && mv ./external_dependencies/ /tau/external_dependencies/
+    ls -haltr
+    cd /pdt
+     ./configure
+    export PATH=$PATH:/pdt/x86_64//bin
+    make
+    make install
+
+    cd /tau
+    ./configure  -cc=mpicc -c++=mpiicpc -mpi -pthread  \
+    -mpiinc=/opt/intel/oneapi/mpi/latest/include \
+    -mpilib=/opt/intel/oneapi/mpi/latest/lib \
+    -pdt=/pdt \
+    -bfd=download
+
+    export PATH=$PATH:/tau/x86_64/bin/
+    make install
+
+
+    # build apps
+    cd /SCoOL/examples
+    ./build.sh
+    # and do cleanup
+    #apt purge -y intel-oneapi-*
+    apt clean
+
+    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/tmp/*
+    rm -rf /tau_latest.tar.gz
+    rm -rf /ext.tgz
+    rm -rf /pdt.tar.gz
+
+%runscript
+    echo "SCoOL Demo Container"
+    echo "Usage:"
+    echo "  qap_shm: singularity run --app qap_shm scool-example.simg"
+    echo "  qap_mpi: singularity run --app qap_mpi scool-example.simg"
+    echo ""
+    echo "Note that Intel MPI root directory must be bound to the container's /intel-mpi"
+    echo "e.g.: singularity run -B /opt/intel/oneapi/mpi/latest:/intel-mpi"
+
+%apprun qap_shm
+    /SCoOL/examples/bin/qap_shm $@
+
+%apprun qap_mpi
+    /SCoOL/examples/bin/qap_mpi $@:
