@@ -45,8 +45,9 @@ namespace scool {
       void push(const task_type& t) {
           int tid = omp_get_thread_num();
           if constexpr (!Unique) {
-              //std::cout << "Inserting in first" << std::endl;
+              //std::cout << "Pushing" << std::endl;
               exec_.next_.insert(t);
+              //std::cout << "Pushed" <<std::endl;
            }
            else{
                std::cout << "Inserting in second" << std::endl;
@@ -166,11 +167,11 @@ namespace scool {
           #pragma omp parallel
           #pragma omp single
           {
-              int p = omp_get_num_threads();
+              p = omp_get_num_threads();
 
               this->sts_.resize(p);
 
-              B_ = 991;
+              B_ = 99999991;
               curr_.init(B_, p);
               next_.init(B_, p);
 
@@ -195,6 +196,7 @@ namespace scool {
             std::cout << "Intializing" <<std::endl;
             next_.insert(t);
             this->ntasks_ = 1;
+            this->gst_ = st;
       } // init
 
 
@@ -208,18 +210,23 @@ namespace scool {
         
           std::swap(curr_, next_);
 
-          curr_.reconcile();
+          //curr_.reconcile();
           next_.soft_clear();
 
           this->iter_++;
 
           
           m_process__();
-          curr_.soft_clear();
-          //this->m_reduce_state__();
+
+          //curr_.soft_clear();
+          this->m_reduce_state__();
+
+
+        //   std::cout << "size before reconsile : " << next_.size1() << std::endl;
+          next_.reconcile();
 
           this->ntasks_ = 0;
-          this->ntasks_ += next_.size();
+          this->ntasks_ += next_.size1();
           //std::cout << "Added " << this->ntasks_ << "new tasks" <<std::endl;
 
           return this->ntasks_;
@@ -230,25 +237,36 @@ namespace scool {
       using local_storage_type = omp_process_table<task_type, std::hash<task_type>, std::allocator>;
 
       void m_process__() {
-          int p = curr_.num_views();
-          state_type* sts = this->sts_.data();
+            int p = curr_.num_views();
+            state_type* sts = this->sts_.data();
           
 
-            #pragma omp parallel default(none) shared( curr_, ctx_, sts, next_, std::cout) firstprivate(p)
-            {
-                #pragma omp master
-                for(auto t = curr_.begin(); t!=curr_.end();++t){
-                    //States are not handled properly
-                    //std::cout << "Checkpoint " << std::endl;
-                    //#pragma omp task firstprivate(t) untied
-                    {
-                        int tid = omp_get_thread_num();
-                        usleep(1000000);
-                        std::cout << "tid " << tid << " / "<< omp_get_num_threads() << std::endl;
+            // #pragma omp parallel default(none) shared( curr_, ctx_, sts, next_, std::cout) firstprivate(p)
+            // {
+            //     #pragma omp master
+            //     for(auto t = curr_.begin(); t!=curr_.end();++t){
+            //         //States are not handled properly
+            //         //std::cout << "Checkpoint " << std::endl;
+            //         //#pragma omp task firstprivate(t) untied
+            //         {
+            //             int tid = omp_get_thread_num();
+            //             usleep(1000000);
+            //             std::cout << "tid " << tid << " / "<< omp_get_num_threads() << std::endl;
                       
-                        t->process(ctx_, sts[tid]);
+            //             t->process(ctx_, sts[tid]);
                         
-                    }
+            //         }
+            //     }
+            // }
+
+            using task_table = std::vector<task_type, std::allocator<task_type>>;
+
+            #pragma omp parallel for default(none) shared( curr_, ctx_, sts, next_, std::cout) firstprivate(p)
+            for(int b=0;b<B_;b++){
+                for (auto t : curr_.omp_process_views_[0].S_[b]){
+                    int tid = omp_get_thread_num();
+                    //std::cout << "Executed by " << tid << std::endl;
+                    t.process(ctx_, sts[tid]);
                 }
             }
 
@@ -268,6 +286,7 @@ namespace scool {
       omp_context<omp_executor, Unique> ctx_;
 
       int B_= 0;
+      int p = 0;
 
       local_storage_type curr_;
       local_storage_type next_;
@@ -324,6 +343,7 @@ namespace scool {
                                         << " tasks, superstep " << this->iter_
                                         << "..." << std::endl;
           std::swap(curr_, next_);
+
           this->iter_++;
 
           m_process__();

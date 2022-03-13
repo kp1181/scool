@@ -146,7 +146,7 @@ public:
 
     bool empty() const { return (size_ == 0); }
 
-    size_type size() const { return size_; }
+    size_type size1() const { return size_; }
 
     bool isEmpty(task_table& t){
         if(t.size()>0) return false;
@@ -178,7 +178,11 @@ public:
             size_++;
         } else {
             //Calling merge on key(task provided by user)
+            //std::cout << "Calling merge during insert " << std::endl;
+            //std::cout << "Hash before merge : " << h(t[pos]) << std::endl;
             t[pos].merge(v);
+            //std::cout << "Hash  after merge : " << h(t[pos]) << std::endl;
+            //std::cout << "**********************************"<< std::endl;
         }
     } // insert
 
@@ -261,21 +265,24 @@ public:
             if (pos == -1) {
                 mainTable.push_back(entry);
                 sz++;
+                //size_++;
             } 
             //We just compare tasks here. == operator for the task should be defined by the user
             else if (mainTable[pos]==entry){
                 // merge should be defined by the user
+                // std::cout << "Calling merge during merge_by_bucket " << std::endl;
                 mainTable[pos].merge(entry);
             };
         } // for entry
 
         last_b_ = std::max(b, last_b_);
+        //std::cout << "Added "<<sz<< " to 0th view" << std::endl;
 
         return sz;
     } // merge_by_bucket
 
 
-private:
+// private:
     int m_find_pos__(const task_table& t, const task_type& k) const {
         int sz = t.size();
         for (int i = 0; i < sz; ++i) if (t[i] == k) return i;

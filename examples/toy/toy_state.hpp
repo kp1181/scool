@@ -31,7 +31,9 @@ public:
     //
     // Parameters:
     // st - toy_state to reduce with, i.e., the expected behavior is *this* = *this* + *st*.
-    void operator+=(const toy_state& st);
+    void operator+=(const toy_state& st){
+        int a = 0;
+    };
 
     // Function: operator==
     // Implements equality comparison.

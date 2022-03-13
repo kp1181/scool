@@ -73,6 +73,7 @@ public:
     // Parameters:
     // t - Object of *TaskType* model that should be merged with the calling task.
     void merge(const toy_task& t){
+        std::cout << "Encountered same tasks!!!!!!!!" <<std::endl;
         int a = 1;
     };  // no merging will be needed
 

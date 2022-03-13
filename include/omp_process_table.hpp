@@ -41,20 +41,43 @@ public:
     }
 
     void insert(const task_type& v) {
-        if (m_curr_thread == -1)
-            m_curr_thread = omp_get_thread_num();
-        omp_process_views_[m_curr_thread].insert(v);
+        //if (m_curr_thread == -1)
+        int cur_t = omp_get_thread_num();
+        //std::cout << "Inserting into "
+        omp_process_views_[cur_t].insert(v);
     }
 
     void reconcile()
     {
         //Merge all hash tables
-        #pragma omp parallel for default(none) shared(omp_process_views_,std::cout,B_,n_views_) schedule(static)
+
+        int p = 1;
+
+        #pragma omp parallel
+        #pragma omp single
+        {
+            p = omp_get_num_threads();
+        }
+        std::vector<int> updated_size(p,0);
+        #pragma omp parallel for default(none) shared(updated_size, omp_process_views_,std::cout,B_,n_views_) schedule(static)
         for (int i = 0; i < B_; i++) {
             for (int j = 1; j < n_views_; j++) {
-                omp_process_views_[0].merge_by_bucket(omp_process_views_[j], i);
+                int cur_t = omp_get_thread_num();
+                int added = omp_process_views_[0].merge_by_bucket(omp_process_views_[j], i);
+                updated_size[cur_t]+=added;
             }
         }
+
+        //Update size of 0th view
+        int new_size = 0;
+        for(int i=0;i<p;i++){
+            //std::cout << "Thread " << i << " added " <<  updated_size[i] << std::endl;
+            new_size += updated_size[i];
+        }
+
+        //std::cout << "added " <<new_size << " 0th view" << std::endl;
+
+        omp_process_views_[0].size_ += new_size;
     }
 
     void release(){
@@ -83,8 +106,8 @@ public:
         return omp_process_views_[0].empty();
     }
 
-    int size(){
-        return static_cast<int>(omp_process_views_[0].size());
+    int size1(){
+        return static_cast<int>(omp_process_views_[0].size1());
     }
 
 
