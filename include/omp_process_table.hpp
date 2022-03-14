@@ -6,6 +6,7 @@
 #include <iterator>
 #include <vector>
 #include <omp.h>
+#include <functional>
 
 #include "omp_process_view.hpp"
 
@@ -98,18 +99,24 @@ public:
         }
     }
 
-    int num_views(){
+    const int num_views(){
         return n_views_;
     }
 
-    bool empty(){
+    const bool empty(){
         return omp_process_views_[0].empty();
     }
 
-    int size1(){
+    const int size1(){
         return static_cast<int>(omp_process_views_[0].size1());
     }
 
+    void get_process_views(std::vector<view_type> & views_out)
+    {
+        views_out = std::ref(omp_process_views_);
+    }
+
+    private:
 
     std::vector<view_type> omp_process_views_;
     int B_ = 0;

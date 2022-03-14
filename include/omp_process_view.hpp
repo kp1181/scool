@@ -35,7 +35,7 @@ public:
     // minimal iterator
     template <typename Base, bool Const = false>
     struct iterator {
-        using iterator_category = std::forward_iterator_tag;
+        using iterator_category = std::random_access_iterator_tag;
 
         //using value_type = typename Base::value_type;
 

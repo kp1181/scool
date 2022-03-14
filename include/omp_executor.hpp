@@ -262,8 +262,12 @@ namespace scool {
             using task_table = std::vector<task_type, std::allocator<task_type>>;
 
             #pragma omp parallel for default(none) shared( curr_, ctx_, sts, next_, std::cout) firstprivate(p)
-            for(int b=0;b<B_;b++){
-                for (auto t : curr_.omp_process_views_[0].S_[b]){
+            for(int b=0;b<B_;b++)
+            {
+                //process_views;
+                std::vector<omp_process_view<task_type, std::hash<task_type>, std::allocator>> process_views;
+                curr_.get_process_views(process_views);
+                for (auto t : process_views[0].S_[b]){
                     int tid = omp_get_thread_num();
                     //std::cout << "Executed by " << tid << std::endl;
                     t.process(ctx_, sts[tid]);

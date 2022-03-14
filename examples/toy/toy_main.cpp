@@ -7,7 +7,7 @@
 
 
 int main(int argc, char* argv[]) {
-    toy_task::n = 9;
+    toy_task::n = 2;
     scool::omp_executor<toy_task, toy_state> exec;
 
     exec.init(toy_task(true), toy_state());

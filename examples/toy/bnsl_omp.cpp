@@ -6,7 +6,7 @@
 #include "scool/partitioner.hpp"
 
 const int N = 2;
-using task_type = bnsl_task<N>;
+using task_type = bnsl_task<>;
 int main(int argc, char* argv[]) {
     
     int n = std::atoi(argv[1]);
