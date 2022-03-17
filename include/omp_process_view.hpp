@@ -157,9 +157,9 @@ public:
 
     bool empty() const { return (size_ == 0); }
 
-    size_type size1() const { return size_; }
+    const size_type num_tasks() { return size_; }
 
-    bool isEmpty(task_table& t){
+    const bool isEmpty(task_table& t){
         if(t.size()>0) return false;
         else return true;
     }
@@ -186,7 +186,7 @@ public:
 
         if (pos == -1) {
             t.push_back(v);
-            size_++;
+            ++size_;
         } else {
             //Calling merge on key(task provided by user)
             //std::cout << "Calling merge during insert " << std::endl;
@@ -237,11 +237,11 @@ public:
     } // find
 
 
-    int B() const { return B_; }
+    const int B() { return B_; }
 
-    int last_bucket() const { return last_b_; }
+    const int last_bucket() { return last_b_; }
 
-    const task_table& bucket(int b) const { return S_[b]; }
+    const task_table& bucket(int b) { return S_[b]; }
 
 
     // this is the only method that may run in parallel
@@ -275,7 +275,7 @@ public:
 
             if (pos == -1) {
                 mainTable.push_back(entry);
-                sz++;
+                ++sz;
                 //size_++;
             } 
             //We just compare tasks here. == operator for the task should be defined by the user

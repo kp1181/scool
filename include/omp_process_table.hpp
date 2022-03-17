@@ -62,8 +62,8 @@ public:
         
 
         #pragma omp parallel for default(none) shared(updated_size, omp_process_views_,std::cout,B_,n_views_) schedule(static)
-        for (int i = 0; i < B_; i++) {
-            for (int j = 1; j < n_views_; j++) {
+        for (int i = 0; i < B_; ++i) {
+            for (int j = 1; j < n_views_; ++j) {
                 int cur_t = omp_get_thread_num();
                 int added = omp_process_views_[0].merge_by_bucket(omp_process_views_[j], i);
                 updated_size[cur_t]+=added;
@@ -100,19 +100,19 @@ public:
         }
     }
 
-    int num_views(){
+    const int num_views(){
         return n_views_;
     }
 
-    bool empty(){
+    const bool empty(){
         return omp_process_views_[0].empty();
     }
 
-    int size1(){
-        return static_cast<int>(omp_process_views_[0].size1());
+    const int master_view_size(){
+        return static_cast<int>(omp_process_views_[0].num_tasks());
     }
 
-
+    private:
     std::vector<view_type> omp_process_views_;
     int B_ = 0;
     int n_views_ = 0;

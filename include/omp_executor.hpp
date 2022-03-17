@@ -180,6 +180,7 @@ namespace scool {
       } // omp_executor
 
 
+      // TODO - Know the usage
       // Function: init
       template <typename Iter>
       void init(Iter first, Iter last, const state_type& st,
@@ -218,7 +219,7 @@ namespace scool {
           next_.reconcile();
 
           this->ntasks_ = 0;
-          this->ntasks_ += next_.size1();
+          this->ntasks_ += next_.master_view_size();
           
           return this->ntasks_;
       } // step
