@@ -59,6 +59,8 @@ public:
             p = omp_get_num_threads();
         }
         std::vector<int> updated_size(p,0);
+        
+
         #pragma omp parallel for default(none) shared(updated_size, omp_process_views_,std::cout,B_,n_views_) schedule(static)
         for (int i = 0; i < B_; i++) {
             for (int j = 1; j < n_views_; j++) {

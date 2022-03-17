@@ -45,12 +45,22 @@ public:
         explicit iterator(Base* aptr = nullptr, int b = -1, int p = 0, bool init = false)
             : ptr(aptr), bucket(b), pos(p) {
             if (init == true) {
+                bool flag = false;
                 for (int i = 0; i < ptr->B_; ++i) {
-                    if (ptr->S_[i].empty() == false) {
+                    if (ptr->S_[i].empty() == false && ptr->M_[i]==true) {
+                        flag = true;
                         bucket = i;
                         break;
                     }
+                    // if (ptr->S_[i].empty() == false) {
+                    //     flag = true;
+                    //     bucket = i;
+                    //     break;
+                    // }
                 } // for i
+                if(flag==false){
+                    bucket = -1;
+                }
             } // if
         } // iterator
 
@@ -66,11 +76,12 @@ public:
             pos++;
             if (pos == ptr->S_[bucket].size()) {
                 pos = 0;
-                do { bucket++; } while ((bucket < ptr->B_) && (ptr->S_[bucket].empty()));
+                do { bucket++; } while ((bucket < ptr->B_) && (ptr->M_[bucket]==false));
                 if (bucket == ptr->B_) bucket = -1;
             }
             return *this;
         } // ++operator
+
 
         iterator operator++(int) {
             iterator it = *this;

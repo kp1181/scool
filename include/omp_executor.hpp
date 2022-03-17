@@ -171,7 +171,7 @@ namespace scool {
 
               this->sts_.resize(p);
 
-              B_ = 99999991;
+              B_ = 99991;
               curr_.init(B_, p);
               next_.init(B_, p);
 
@@ -206,29 +206,20 @@ namespace scool {
                                         << " tasks, superstep " << this->iter_
                                         << "..." << std::endl;
 
-          //this->log().error(this->NAME_) << "feature not implemented!" << std::endl;
-        
           std::swap(curr_, next_);
 
-          //curr_.reconcile();
-          next_.soft_clear();
-
+          //next_.soft_clear();
+          next_.lazy_clear();
           this->iter_++;
-
-          
           m_process__();
 
-          //curr_.soft_clear();
           this->m_reduce_state__();
 
-
-        //   std::cout << "size before reconsile : " << next_.size1() << std::endl;
           next_.reconcile();
 
           this->ntasks_ = 0;
           this->ntasks_ += next_.size1();
-          //std::cout << "Added " << this->ntasks_ << "new tasks" <<std::endl;
-
+          
           return this->ntasks_;
       } // step
 
@@ -239,46 +230,39 @@ namespace scool {
       void m_process__() {
             int p = curr_.num_views();
             state_type* sts = this->sts_.data();
-          
 
-            // #pragma omp parallel default(none) shared( curr_, ctx_, sts, next_, std::cout) firstprivate(p)
-            // {
-            //     #pragma omp master
-            //     for(auto t = curr_.begin(); t!=curr_.end();++t){
-            //         //States are not handled properly
-            //         //std::cout << "Checkpoint " << std::endl;
-            //         //#pragma omp task firstprivate(t) untied
-            //         {
-            //             int tid = omp_get_thread_num();
-            //             usleep(1000000);
-            //             std::cout << "tid " << tid << " / "<< omp_get_num_threads() << std::endl;
-                      
-            //             t->process(ctx_, sts[tid]);
-                        
-            //         }
-            //     }
-            // }
 
-            using task_table = std::vector<task_type, std::allocator<task_type>>;
-
-            #pragma omp parallel for default(none) shared( curr_, ctx_, sts, next_, std::cout) firstprivate(p)
-            for(int b=0;b<B_;b++){
-                for (auto t : curr_.omp_process_views_[0].S_[b]){
-                    int tid = omp_get_thread_num();
-                    //std::cout << "Executed by " << tid << std::endl;
-                    t.process(ctx_, sts[tid]);
+            #pragma omp parallel default(none) shared( curr_, ctx_, sts, next_, std::cout) firstprivate(p)
+            #pragma omp single nowait
+            {
+                
+                for(auto t = curr_.begin(); t!=curr_.end();++t){
+                    {
+                        #pragma omp task
+                        {
+                            int tid = omp_get_thread_num();
+                            //std::cout << "tid " << tid << " / "<< omp_get_num_threads() << std::endl;
+                            t->process(ctx_, sts[tid]);   
+                        }
+  
+                    }
                 }
             }
 
-          
-        // if(!curr_.empty()){
+            // using task_table = std::vector<task_type, std::allocator<task_type>>;
 
-        //         for(auto task = curr_.begin(); task!=curr_.end();++task){
-        //                 int tid = omp_get_thread_num();
-        //                 task->process(ctx_, sts[tid]);
-        //         }
+            // #pragma omp parallel 
+            // #pragma omp single
+            // #pragma omp taskloop default(none) shared( curr_, ctx_, sts, next_, std::cout) 
+            // for(int b=0;b<B_;b++){
+            //     for (auto t : curr_.omp_process_views_[0].S_[b]){
+            //         //std::cout << " bucket " << b << " has a task" << std::endl;
+            //         int tid = omp_get_thread_num();
+            //         t.process(ctx_, sts[tid]);
+            //     }
+            // }
 
-        //   }
+
           
       } // m_process__
 
