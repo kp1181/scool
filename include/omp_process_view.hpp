@@ -292,6 +292,10 @@ public:
         return sz;
     } // merge_by_bucket
 
+    const int get_last_used_bucket()
+    {
+        return last_b_;
+    }
 
 // private:
     int m_find_pos__(const task_table& t, const task_type& k) const {
