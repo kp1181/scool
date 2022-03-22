@@ -45,14 +45,10 @@ namespace scool {
       void push(const task_type& t) {
           int tid = omp_get_thread_num();
           if constexpr (!Unique) {
-              //std::cout << "Pushing" << std::endl;
               exec_.next_.insert(t);
-              //std::cout << "Pushed" <<std::endl;
            }
            else{
-               std::cout << "Inserting in second" << std::endl;
-               exec_.next_.insert(t);
-               //impl::add_to<Unique>(exec_.next_[tid], t);
+              impl::add_to<Unique>(exec_.next_[tid], t);
            }
           
       } // push
@@ -110,7 +106,7 @@ namespace scool {
 
       void m_reduce_state__() {
           // here we go with the global state
-          log().debug(NAME_) << "reducing to global state..." << std::endl;
+          //log().debug(NAME_) << "reducing to global state..." << std::endl;
 
           for (auto& st : sts_) gst_ += st;
           gst_.identity();
@@ -191,10 +187,6 @@ namespace scool {
       // Function: init
       void init(const task_type& t, const state_type& st,
                 const partitioner& pt = partitioner()) {
-          //std::vector<task_type> v{t};
-          //this->template m_init__<Unique>(std::begin(v), std::end(v), next_, st);
-            //task_type t1;
-            std::cout << "Intializing" <<std::endl;
             next_.insert(t);
             this->ntasks_ = 1;
             this->gst_ = st;
@@ -249,21 +241,6 @@ namespace scool {
                     }
                 }
             }
-
-            // using task_table = std::vector<task_type, std::allocator<task_type>>;
-
-            // #pragma omp parallel 
-            // #pragma omp single
-            // #pragma omp taskloop default(none) shared( curr_, ctx_, sts, next_, std::cout) 
-            // for(int b=0;b<B_;b++){
-            //     for (auto t : curr_.omp_process_views_[0].S_[b]){
-            //         //std::cout << " bucket " << b << " has a task" << std::endl;
-            //         int tid = omp_get_thread_num();
-            //         t.process(ctx_, sts[tid]);
-            //     }
-            // }
-
-
           
       } // m_process__
 
@@ -297,7 +274,6 @@ namespace scool {
           #pragma omp parallel
           #pragma omp single
           {
-              std::cout << "In second one" <<std::endl;
               int p = omp_get_num_threads();
 
               this->sts_.resize(p);

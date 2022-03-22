@@ -52,13 +52,8 @@ public:
                         bucket = i;
                         break;
                     }
-                    // if (ptr->S_[i].empty() == false) {
-                    //     flag = true;
-                    //     bucket = i;
-                    //     break;
-                    // }
                 } // for i
-                if(flag==false){
+                if(flag == false){
                     bucket = -1;
                 }
             } // if
@@ -76,7 +71,7 @@ public:
             pos++;
             if (pos == ptr->S_[bucket].size()) {
                 pos = 0;
-                do { bucket++; } while ((bucket < ptr->B_) && (ptr->M_[bucket]==false));
+                do { bucket++; } while ((bucket < ptr->B_) && (ptr->M_[bucket] == false));
                 if (bucket == ptr->B_) bucket = -1;
             }
             return *this;
@@ -189,11 +184,7 @@ public:
             ++size_;
         } else {
             //Calling merge on key(task provided by user)
-            //std::cout << "Calling merge during insert " << std::endl;
-            //std::cout << "Hash before merge : " << h(t[pos]) << std::endl;
             t[pos].merge(v);
-            //std::cout << "Hash  after merge : " << h(t[pos]) << std::endl;
-            //std::cout << "**********************************"<< std::endl;
         }
     } // insert
 
@@ -249,45 +240,42 @@ public:
     // the state of the table has to be reconciled
     // via call to update
     int merge_by_bucket(const omp_process_view& S, int b) {
-        task_table& mainTable = S_[b];
-        const task_table& mergeTable = S.S_[b];
-        const char mergeTableFlag = S.M_[b];
+        task_table& main_table = S_[b];
+        const task_table& merge_table = S.S_[b];
+        const char merge_table_flag = S.M_[b];
 
         int sz = 0;
 
-        if(mergeTableFlag==false){
+        if(merge_table_flag == false){
             //This means the other table has no values
             //don't merge, just return
             return sz;
         }
 
-        if(M_[b]==false  && !isEmpty(mainTable)){
-            mainTable.clear();
+        if(M_[b]==false  && !isEmpty(main_table)){
+            main_table.clear();
         }
 
         M_[b] = true;
 
-        for (auto& entry : mergeTable) {
+        for (auto& entry : merge_table) {
 
             //std::cout << "Trying to merge " << entry.value << " at bucket " << b << std::endl;
 
-            int pos = m_find_pos__(mainTable, entry);
+            int pos = m_find_pos__(main_table, entry);
 
             if (pos == -1) {
-                mainTable.push_back(entry);
+                main_table.push_back(entry);
                 ++sz;
-                //size_++;
             } 
             //We just compare tasks here. == operator for the task should be defined by the user
-            else if (mainTable[pos]==entry){
+            else if (main_table[pos] == entry){
                 // merge should be defined by the user
-                // std::cout << "Calling merge during merge_by_bucket " << std::endl;
-                mainTable[pos].merge(entry);
+                main_table[pos].merge(entry);
             };
         } // for entry
 
         last_b_ = std::max(b, last_b_);
-        //std::cout << "Added "<<sz<< " to 0th view" << std::endl;
 
         return sz;
     } // merge_by_bucket
@@ -297,12 +285,24 @@ public:
         return last_b_;
     }
 
-// private:
+    void set_size(int s){
+        size_ = s;
+    }
+
+    int get_size(){
+        return size_;
+    }
+
+    
+private:
     int m_find_pos__(const task_table& t, const task_type& k) const {
         int sz = t.size();
         for (int i = 0; i < sz; ++i) if (t[i] == k) return i;
         return -1;
     } // m_find_pos__
+
+    std::size_t size_ = 0;
+    
 
     // the actual hash table
     std::vector<task_table, Alloc<task_table>> S_;
@@ -313,7 +313,7 @@ public:
 
     int B_ = 0;
 
-    std::size_t size_ = 0;
+    
     int last_b_ = -1;
 
 }; // class omp_process_view
