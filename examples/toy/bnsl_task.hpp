@@ -24,7 +24,7 @@
 
 
 template <int N = 2> struct bnsl_task {
-    static const int PATH_SIZE = N * set_max_word<N>();
+    static const int PATH_SIZE = set_max_item<N>() + 1;
 
     using set_type = uint_type<N>;
 
@@ -149,10 +149,10 @@ namespace std {
 template <int N> struct bnsl_hyper_partitioner {
     explicit bnsl_hyper_partitioner(int b = 1) : b_(1) { }
 
-    int operator()(const bnsl_task<N>& t) const {
-        auto val = t.id;
-        val = shift_right(val, b_);
-        return msb(val);
+    unsigned long long operator()(const bnsl_task<N>& t) const {
+        auto val = shift_right(t.id, b_);
+        uint_hash h;
+        return h(val);
     } // operator()
 
     int b_ = 1;

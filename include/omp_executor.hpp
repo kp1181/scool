@@ -167,7 +167,8 @@ namespace scool {
 
               this->sts_.resize(p);
 
-              B_ = 99991;
+            //   B_ = 40009;
+              B_ = 40009;
               curr_.init(B_, p);
               next_.init(B_, p);
 
@@ -199,16 +200,35 @@ namespace scool {
                                         << " tasks, superstep " << this->iter_
                                         << "..." << std::endl;
 
+
+          auto t4 = std::chrono::system_clock::now();
           std::swap(curr_, next_);
 
           //next_.soft_clear();
           next_.lazy_clear();
+
+          auto t5 = std::chrono::system_clock::now();
+          auto elapsed_par_2 = std::chrono::duration<double>(t5 - t4);
+          this->log().info(this->NAME_) << "swap and clear took : " <<  elapsed_par_2.count() << std::endl;
+
           this->iter_++;
+
+          auto t0 = std::chrono::system_clock::now();
           m_process__();
+
+          auto t1 = std::chrono::system_clock::now();
+          auto elapsed_par = std::chrono::duration<double>(t1 - t0);
+          this->log().info(this->NAME_) << "Processing took : " <<  elapsed_par.count() << std::endl;
+
 
           this->m_reduce_state__();
 
+          auto t2 = std::chrono::system_clock::now();
           next_.reconcile();
+          auto t3 = std::chrono::system_clock::now();
+          auto elapsed_par_1 = std::chrono::duration<double>(t3 - t2);
+          this->log().info(this->NAME_) << "Merging took : " <<  elapsed_par_1.count() << std::endl;
+
 
           this->ntasks_ = 0;
           this->ntasks_ += next_.master_view_size();
@@ -223,24 +243,110 @@ namespace scool {
       void m_process__() {
             int p = curr_.num_views();
             state_type* sts = this->sts_.data();
+            this->log().info(this->NAME_) << "Processing started..." << std::endl;
 
-
-            #pragma omp parallel default(none) shared( curr_, ctx_, sts, next_, std::cout) firstprivate(p)
-            #pragma omp single nowait
-            {
+            //TASK 0
+            // #pragma omp parallel default(none) shared( curr_, ctx_, sts, next_, std::cout) firstprivate(p)
+            // #pragma omp single
+            // {
                 
-                for(auto t = curr_.begin(); t!=curr_.end();++t){
-                    {
-                        #pragma omp task
-                        {
-                            int tid = omp_get_thread_num();
-                            //std::cout << "tid " << tid << " / "<< omp_get_num_threads() << std::endl;
-                            t->process(ctx_, sts[tid]);   
-                        }
+            //     for(auto t = curr_.begin(); t!=curr_.end();++t){
+            //         {
+            //             #pragma omp task untied
+            //             {
+            //                 int tid = omp_get_thread_num();
+            //                 //std::cout << "tid " << tid << " / "<< omp_get_num_threads() << std::endl;
+            //                 t->process(ctx_, sts[tid]);   
+            //             }
   
+            //         }
+            //     }
+            // }
+             
+             // PF 1
+            //  using task_table = std::vector<task_type, std::allocator<task_type>>;
+
+            //  #pragma omp parallel for default(none) shared( curr_, ctx_, sts, next_, std::cout) 
+            //  for(int b=0;b<B_;b++){
+            //      if(curr_.omp_process_views_[0].M_[b]==true){
+            //         for (auto t : curr_.omp_process_views_[0].S_[b]){
+            //          int tid = omp_get_thread_num();
+            //          //std::cout << "Executed by " << tid << std::endl;
+            //          t.process(ctx_, sts[tid]);
+            //         }
+            //      }
+            //  }
+
+            // TASK 1
+            using task_table = std::vector<task_type, std::allocator<task_type>>;
+
+             #pragma omp parallel default(none) shared( curr_, ctx_, sts, next_, std::cout) firstprivate(p)
+             #pragma omp single 
+             for(int b=0;b<B_;b++){
+                 #pragma omp task 
+                 {
+                    if(curr_.omp_process_views_[0].M_[b]==true){
+                        for (auto t : curr_.omp_process_views_[0].S_[b]){
+                        int tid = omp_get_thread_num();
+                        t.process(ctx_, sts[tid]);
+                        }
                     }
-                }
-            }
+                 }
+             }
+
+            //TASK 2
+            // using task_table = std::vector<task_type, std::allocator<task_type>>;
+
+            // #pragma omp parallel
+            // #pragma omp single 
+            // #pragma omp taskloop untied default(none) shared( curr_, ctx_, sts, next_, std::cout) firstprivate(p)
+            // for(int b=0;b<B_;b++){
+            //     if(curr_.omp_process_views_[0].M_[b]==true){
+            //         for (auto t : curr_.omp_process_views_[0].S_[b]){
+            //         int tid = omp_get_thread_num();
+            //         //std::cout << "Executed by " << tid << std::endl;
+            //         t.process(ctx_, sts[tid]);
+            //         }
+            //     }    
+            // }
+
+            //TASK 3
+            // using task_table = std::vector<task_type, std::allocator<task_type>>;
+
+            //  #pragma omp parallel default(none) shared( curr_, ctx_, sts, next_, std::cout) firstprivate(p)
+            //  #pragma omp single 
+            //  for(int b=0;b<B_;b++){
+
+            //     if(curr_.omp_process_views_[0].M_[b]==true){
+            //         #pragma omp task
+            //         {
+            //             for (auto t : curr_.omp_process_views_[0].S_[b]){
+            //             int tid = omp_get_thread_num();
+            //             //std::cout << "Executed by " << tid << std::endl;
+            //             t.process(ctx_, sts[tid]);
+            //             }
+            //         }
+            //     }
+                 
+            //  }
+
+            //TASK 4
+            // using task_table = std::vector<task_type, std::allocator<task_type>>;
+
+            //  #pragma omp parallel default(none) shared( curr_, ctx_, sts, next_, std::cout) firstprivate(p)
+            //  #pragma omp single 
+            //  for(int b=0;b<B_;b++){
+            //     if(curr_.omp_process_views_[0].M_[b]==true){
+            //         for (auto t : curr_.omp_process_views_[0].S_[b]){
+            //             #pragma omp task
+            //             {
+            //                 int tid = omp_get_thread_num();
+            //                 //std::cout << "Executed by " << tid << std::endl;
+            //                 t.process(ctx_, sts[tid]);
+            //             }
+            //         }
+            //     }
+            //  }
           
       } // m_process__
 

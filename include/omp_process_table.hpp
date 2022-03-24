@@ -85,12 +85,12 @@ public:
         }
 
         //Update size of 0th view
-        int new_size = 0;
-        for(int i = 0; i < p; i++){
+        long long int new_size = 0;
+        for(long long int i = 0; i < p; i++){
            new_size += updated_size[i];
         }
 
-        int original_size = omp_process_views_[0].get_size();
+        long long int original_size = omp_process_views_[0].get_size();
         omp_process_views_[0].set_size(original_size + new_size);
     }
 
@@ -120,11 +120,11 @@ public:
         return omp_process_views_[0].empty();
     }
 
-    const int master_view_size(){
-        return static_cast<int>(omp_process_views_[0].num_tasks());
+    const long long int master_view_size(){
+        return static_cast<long long int>(omp_process_views_[0].num_tasks());
     }
 
-    private:
+    //private:
     std::vector<view_type> omp_process_views_;
     int B_ = 0;
     int n_views_ = 0;

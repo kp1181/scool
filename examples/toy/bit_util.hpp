@@ -40,7 +40,7 @@ constexpr int bit_util_type_shift = 6;
 #endif // BIT_UTIL_64BIT
 
 
-template <int N> constexpr int set_max_word() { return N * (1 << bit_util_type_shift); }
+template <int N> constexpr int set_max_item() { return N * (1 << bit_util_type_shift); }
 
 
 template <int N> struct uint_type {

@@ -289,12 +289,12 @@ public:
         size_ = s;
     }
 
-    int get_size(){
+    long long int get_size(){
         return size_;
     }
 
     
-private:
+//private:
     int m_find_pos__(const task_table& t, const task_type& k) const {
         int sz = t.size();
         for (int i = 0; i < sz; ++i) if (t[i] == k) return i;
