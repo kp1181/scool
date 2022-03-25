@@ -15,7 +15,8 @@ public:
 
     using task_type = Task;
     using task_hash = std::hash<task_type>;
-    using view_type = omp_process_view<task_type, task_hash, std::allocator>;
+    using view_type = omp_process_view<task_type, task_hash, Alloc>;
+    using task_table = std::vector<task_type, Alloc<task_type>>;
 
     typename view_type::iterator<view_type> find(const task_type& k)
     {
@@ -124,7 +125,18 @@ public:
         return static_cast<long long int>(omp_process_views_[0].num_tasks());
     }
 
-    //private:
+    using hashtable = std::vector<task_table, Alloc<task_table>>;
+    hashtable& get_mastertable_view()
+    {
+        return (omp_process_views_[0].get_hash_table());
+    }
+
+    std::vector<char>& get_mastertable_state()
+    {
+        return (omp_process_views_[0].get_bucket_state());
+    }
+
+    private:
     std::vector<view_type> omp_process_views_;
     int B_ = 0;
     int n_views_ = 0;

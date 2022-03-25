@@ -277,22 +277,23 @@ namespace scool {
             //      }
             //  }
 
-            // TASK 1
-            using task_table = std::vector<task_type, std::allocator<task_type>>;
+            // // TASK 1
+            // using task_table = std::vector<task_type, std::allocator<task_type>>;
 
-             #pragma omp parallel default(none) shared( curr_, ctx_, sts, next_, std::cout) firstprivate(p)
-             #pragma omp single 
-             for(int b=0;b<B_;b++){
-                 #pragma omp task 
-                 {
-                    if(curr_.omp_process_views_[0].M_[b]==true){
-                        for (auto t : curr_.omp_process_views_[0].S_[b]){
-                        int tid = omp_get_thread_num();
-                        t.process(ctx_, sts[tid]);
-                        }
-                    }
-                 }
-             }
+            //  #pragma omp parallel default(none) shared( curr_, ctx_, sts, next_, std::cout) firstprivate(p)
+            //  #pragma omp single 
+            //  for(int b=0;b<B_;b++){
+            //      #pragma omp task 
+            //      {
+            //         if(curr_.omp_process_views_[0].M_[b]==true){
+            //             for (auto t : curr_.omp_process_views_[0].S_[b]){
+            //             int tid = omp_get_thread_num();
+            //             t.process(ctx_, sts[tid]);
+            //             }
+            //         }
+            //      }
+            //  }
+
 
             //TASK 2
             // using task_table = std::vector<task_type, std::allocator<task_type>>;
@@ -347,6 +348,24 @@ namespace scool {
             //         }
             //     }
             //  }
+
+
+            // TASK 5
+            auto S_ =  curr_.get_mastertable_view();
+            auto m_state = curr_.get_mastertable_state();
+             #pragma omp parallel default(none) shared( curr_, ctx_, sts, next_, std::cout, S_, m_state) firstprivate(p)
+             #pragma omp single 
+             for(int b=0;b<B_;b++){
+                 #pragma omp task 
+                 {
+                     if(m_state[b]==true){
+                        for (auto t:S_[b]){
+                        int tid = omp_get_thread_num();
+                        t.process(ctx_, sts[tid]);
+                        }
+                    }
+                 }
+             }
           
       } // m_process__
 
