@@ -9,13 +9,16 @@
 
 #include "omp_process_view.hpp"
 
-template <typename Task, typename Hash, template <typename A> class Alloc = std::allocator>
-class omp_process_table {
+
+namespace scool
+{
+    template <typename Task, typename Hash, template <typename A> class Alloc = std::allocator>
+    class omp_process_table {
     public:
 
         using task_type = Task;
         using task_hash = std::hash<task_type>;
-        using view_type = omp_process_view<task_type, task_hash, Alloc>;
+        using view_type = detail::omp_process_view<task_type, task_hash, Alloc>;
         using task_table = std::vector<task_type, Alloc<task_type>>;
 
         void init(int b, int p) {
@@ -116,6 +119,8 @@ class omp_process_table {
                 last_b_ = std::max(last_b_, omp_process_views_[i].get_last_used_bucket());
             }
         }
-};
+    }; // class omp_process_table
+} // namespace scool
+
 
 #endif // OMP_PROCESS_TABLE_HPP
