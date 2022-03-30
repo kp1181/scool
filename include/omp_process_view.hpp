@@ -29,7 +29,6 @@ public:
 
     // using value_type = std::pair<key_type, mapped_type>;
     using task_table = std::vector<task_type, Alloc<task_type>>;
-
     using size_type = std::size_t;
 
     // minimal iterator
@@ -293,8 +292,19 @@ public:
         return size_;
     }
 
+    using hashtable = std::vector<task_table, Alloc<task_table>>;
+    hashtable& get_hash_table()
+    {
+        return (S_);
+    }
+
+    std::vector<char>& get_bucket_state()
+    {
+        return (M_);
+    }
+
     
-//private:
+    private:
     int m_find_pos__(const task_table& t, const task_type& k) const {
         int sz = t.size();
         for (int i = 0; i < sz; ++i) if (t[i] == k) return i;
